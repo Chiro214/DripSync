@@ -69,17 +69,19 @@ export function Hero({ onNavigate }: HeroProps) {
       >
         <div className="relative w-full h-full">
           {/* Replace ImageWithFallback with a debug-friendly <img> that falls back */}
-          <img
-            src="src/styles/kj.jpg"
-            alt="Electronic music festival with crowd and lights"
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              // show placeholder if original fails
-              const target = e.currentTarget as HTMLImageElement;
-              target.onerror = null;
-              target.src = 'src/styles/kj.jpg'; // put kj.jpg in public/styles/
-            }}
-          />
+          <video
+  autoPlay
+  muted
+  loop
+  playsInline
+  poster="/styles/kj.jpg" 
+  className="absolute inset-0 w-full h-full object-cover"
+>
+  <source src="src/styles/videos/hero-video.mp4" type="video/mp4" />
+  <source src="src/styles/videos/hero-bg.webm" type="video/webm" />
+  Your browser does not support the video tag.
+</video>
+
           
           {/* Advanced Gradient Overlays */}
           <div className="absolute inset-0 bg-gradient-to-b from-drip-dark-start/80 via-drip-dark-start/40 to-drip-dark-end/90" />
