@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, useScroll, useTransform } from 'motion/react';
 
+// Import your logo SVG/component at the top
+
 interface MorphingLogoProps {
   className?: string;
 }
@@ -82,7 +84,9 @@ export function MorphingLogo({ className = "" }: MorphingLogoProps) {
         animate={isMorphed ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.5 }}
         transition={{ type: "spring", stiffness: 200, damping: 25 }}
       >
-        <MonkeyLogo />
+        {/* Replace MonkeyLogo with your logo */}
+        <img src="src/styles/di.png" className="w-16 h-16 z-10" alt="Logo" />
+        {/* Or use <img src="/path/to/logo.svg" className="w-12 h-12" alt="Logo" /> */}
       </motion.div>
     </div>
   );

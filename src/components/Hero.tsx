@@ -4,7 +4,7 @@ import { motion, useScroll, useTransform, useSpring } from 'motion/react';
 import { Button } from './ui/button';
 import { Play, ArrowRight, Volume2, Users, Calendar, Star } from 'lucide-react';
 import { useRef, useState, useEffect } from 'react';
-import { ImageWithFallback } from './figma/ImageWithFallback';
+// Removed invalid import for image
 
 interface HeroProps {
   onNavigate: (page: string) => void;
@@ -68,10 +68,17 @@ export function Hero({ onNavigate }: HeroProps) {
         style={{ y, scale }}
       >
         <div className="relative w-full h-full">
-          <ImageWithFallback
-            src="https://images.unsplash.com/photo-1574155331040-87b9dae81218?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVjdHJvbmljJTIwbXVzaWMlMjBmZXN0aXZhbCUyMGNyb3dkJTIwbGlnaHRzfGVufDF8fHx8MTc1NzEwODUwM3ww&ixlib=rb-4.1.0&q=80&w=1080"
+          {/* Replace ImageWithFallback with a debug-friendly <img> that falls back */}
+          <img
+            src="src/styles/kj.jpg"
             alt="Electronic music festival with crowd and lights"
             className="w-full h-full object-cover"
+            onError={(e) => {
+              // show placeholder if original fails
+              const target = e.currentTarget as HTMLImageElement;
+              target.onerror = null;
+              target.src = 'src/styles/kj.jpg'; // put kj.jpg in public/styles/
+            }}
           />
           
           {/* Advanced Gradient Overlays */}
@@ -167,17 +174,13 @@ export function Hero({ onNavigate }: HeroProps) {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="mb-8"
+          className="mt-6 mb-4 relative z-10"
         >
           <motion.div
             className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/5 backdrop-blur-sm border border-white/10"
             whileHover={{ scale: 1.05, backgroundColor: "rgba(0, 212, 170, 0.1)" }}
             transition={{ duration: 0.2 }}
           >
-            <Star className="w-4 h-4 text-drip-warm-yellow" />
-            <span className="text-white/90 text-sm font-medium">
-              India's #1 Electronic Music Event Company
-            </span>
             <motion.div
               className="w-2 h-2 bg-drip-neon-teal rounded-full"
               animate={{ opacity: [1, 0.5, 1] }}
