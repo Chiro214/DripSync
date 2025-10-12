@@ -1,7 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { supabase } from './lib/supabaseClient';
+import { Auth } from '@supabase/auth-ui-react';
+import { ThemeSupa } from '@supabase/auth-ui-shared';
+
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { HomePage } from './components/pages/HomePage';
@@ -9,29 +13,104 @@ import { EventsPage } from './components/pages/EventsPage';
 import { TeamPage } from './components/pages/TeamPage';
 import { ServicesPage } from './components/pages/ServicesPage';
 import { ContactPage } from './components/pages/ContactPage';
+import { MyBookings } from './components/MyBookings';
+
+const AdminDashboard = ({ user }: { user: any }) => {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white p-6">
+      <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
+      <p className="mb-6">Signed in as: {user?.email ?? 'Unknown'}</p>
+      <div className="space-x-2">
+        <button
+          className="bg-red-500 text-white px-4 py-2 rounded"
+          onClick={() => supabase.auth.signOut()}
+        >
+          Sign out
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
 
-  // Initial loading animation
+  const loaderTimeoutRef = useRef<number | null>(null);
+
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 2000);
-    return () => clearTimeout(timer);
+    loaderTimeoutRef.current = window.setTimeout(() => setIsLoading(false), 8000);
+
+    // Get current Supabase session
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+
+    // Listen for login/logout
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      if (loaderTimeoutRef.current) clearTimeout(loaderTimeoutRef.current);
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
   const handleNavigation = (page: string) => {
     setCurrentPage(page);
-    // Smooth scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Loading screen
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 drip-gradient-bg flex items-center justify-center z-50">
+        <motion.div
+          className="relative w-full h-full flex items-center justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6 }}
+        >
+          <motion.video
+            className="w-full h-full object-cover"
+            src="src/styles/videos/loader.mp4"
+            autoPlay
+            muted
+            playsInline
+            onEnded={() => {
+              if (loaderTimeoutRef.current) clearTimeout(loaderTimeoutRef.current);
+              setIsLoading(false);
+            }}
+            initial={{ opacity: 0.8 }}
+            animate={{ opacity: [0.8, 1, 0.9] }}
+            transition={{ duration: 6, repeat: Infinity }}
+          />
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Supabase Auth: show login if not logged in
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
+        <Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa }} />
+      </div>
+    );
+  }
+
+  // Admin dashboard
+  if (user.email === 'chiragshukla236@gmail.com') {
+    return <AdminDashboard user={user} />;
+  }
+
+  // Render normal pages
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
         return <HomePage onNavigate={handleNavigation} />;
       case 'events':
-        return <EventsPage onNavigate={handleNavigation} />;
+        return <EventsPage onNavigate={handleNavigation} user={user} />;
       case 'team':
         return <TeamPage onNavigate={handleNavigation} />;
       case 'services':
@@ -43,119 +122,18 @@ export default function App() {
     }
   };
 
-  // Loading Screen
-  if (isLoading) {
-    return (
-      <div className="fixed inset-0 drip-gradient-bg flex items-center justify-center z-50">
-        <motion.div
-          className="text-center"
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8 }}
-        >
-          {/* Loading Logo Animation */}
-          <motion.div
-            className="mb-8"
-            animate={{ 
-              rotateY: [0, 180, 360],
-              scale: [1, 1.1, 1]
-            }}
-            transition={{ 
-              duration: 2, 
-              repeat: Infinity, 
-              ease: "easeInOut" 
-            }}
-          >
-            <h1 className="text-6xl font-bold drip-text-gradient">
-              DripSync
-            </h1>
-          </motion.div>
-          
-          {/* Loading Bars */}
-          <div className="flex gap-1 justify-center mb-4">
-            {[...Array(5)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="w-1 h-8 bg-drip-neon-teal rounded-full"
-                animate={{ 
-                  scaleY: [1, 2, 1],
-                  opacity: [0.5, 1, 0.5]
-                }}
-                transition={{ 
-                  duration: 1, 
-                  repeat: Infinity, 
-                  delay: i * 0.1 
-                }}
-              />
-            ))}
-          </div>
-          
-          <motion.p
-            className="text-white/70"
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          >
-            Syncing the experience...
-          </motion.p>
-        </motion.div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen drip-gradient-bg relative">
-      {/* Background Elements */}
+      {/* Background & floating elements */}
       <div className="fixed inset-0 drip-noise opacity-20 pointer-events-none" />
-      
-      {/* Floating Gradient Orbs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <motion.div
-          className="absolute top-20 left-10 w-72 h-72 bg-drip-neon-teal/10 rounded-full blur-3xl"
-          animate={{
-            x: [0, 100, 0],
-            y: [0, -50, 0],
-            scale: [1, 1.2, 1]
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
-        <motion.div
-          className="absolute bottom-20 right-10 w-96 h-96 bg-drip-deep-purple/10 rounded-full blur-3xl"
-          animate={{
-            x: [0, -80, 0],
-            y: [0, 60, 0],
-            scale: [1, 0.8, 1]
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 5
-          }}
-        />
-        <motion.div
-          className="absolute top-1/2 left-1/2 w-64 h-64 bg-drip-warm-yellow/5 rounded-full blur-3xl"
-          animate={{
-            x: [-50, 50, -50],
-            y: [-30, 30, -30],
-            scale: [0.8, 1.3, 0.8]
-          }}
-          transition={{
-            duration: 30,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 10
-          }}
-        />
+      <div className="fixed inset-0 pointer-events-none overflow-hidden" />
+
+      {/* Header + My Bookings */}
+      <Header currentPage={currentPage} onNavigate={handleNavigation} />
+      <div className="fixed top-20 right-4 z-50">
+        <MyBookings userId={user.id} />
       </div>
 
-      {/* Header */}
-      <Header currentPage={currentPage} onNavigate={handleNavigation} />
-
-      {/* Main Content with Page Transitions */}
       <main className="relative z-10">
         <AnimatePresence mode="wait">
           <motion.div
@@ -163,20 +141,24 @@ export default function App() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            transition={{ 
-              duration: 0.5, 
-              ease: "easeInOut" 
-            }}
+            transition={{ duration: 0.5, ease: 'easeInOut' }}
           >
             {renderPage()}
           </motion.div>
         </AnimatePresence>
       </main>
 
-      {/* Footer */}
       <Footer onNavigate={handleNavigation} />
 
-      {/* Scroll to Top Button */}
+      {/* Logout button */}
+      <button
+        className="fixed top-4 right-4 bg-red-500 text-white px-3 py-1 rounded z-50"
+        onClick={() => supabase.auth.signOut()}
+      >
+        Logout
+      </button>
+
+      {/* Scroll to top button */}
       <motion.button
         className="fixed bottom-8 right-8 p-3 drip-glass rounded-full border border-drip-glass-border text-drip-neon-teal hover:bg-drip-neon-teal hover:text-drip-dark-start transition-colors z-50 drip-glow"
         initial={{ opacity: 0, scale: 0 }}

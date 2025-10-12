@@ -3,18 +3,20 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { EventCard } from '../EventCard';
+import { BookNowButton } from '../BookNowButton';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Input } from '../ui/input';
-import { Search, Filter, Calendar, MapPin } from 'lucide-react';
+import { Search, Calendar } from 'lucide-react';
 import { sampleEvents, eventGenres, eventCities } from '../../data/events';
 
 interface EventsPageProps {
   onNavigate: (page: string) => void;
+  user: { id: string; email: string };
 }
 
-export function EventsPage({ onNavigate }: EventsPageProps) {
+export function EventsPage({ onNavigate, user }: EventsPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('All');
   const [selectedCity, setSelectedCity] = useState('All Cities');
@@ -163,14 +165,19 @@ export function EventsPage({ onNavigate }: EventsPageProps) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
-                <EventCard 
-                  event={event} 
-                  onClick={() => {
-                    // Handle event details
-                    console.log('Event clicked:', event.title);
-                  }}
+                <EventCard
+                  event={event}
+                  onClick={() => console.log('Event clicked:', event.title)}
                   variant={viewMode === 'list' ? 'compact' : 'default'}
                 />
+                <div className="mt-2">
+                  <BookNowButton
+                    eventId={event.id}
+                    price={Number(event.price)}
+                    userId={user.id}
+                    userEmail={user.email}
+                  />
+                </div>
               </motion.div>
             ))}
           </motion.div>
@@ -201,46 +208,6 @@ export function EventsPage({ onNavigate }: EventsPageProps) {
             </div>
           </motion.div>
         )}
-
-        {/* Load More Button */}
-        {filteredEvents.length > 0 && filteredEvents.length >= 6 && (
-          <motion.div
-            className="text-center mt-12"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-          >
-            <Button
-              variant="outline"
-              className="border-2 border-drip-warm-yellow text-drip-warm-yellow hover:bg-drip-warm-yellow hover:text-drip-dark-start"
-              size="lg"
-            >
-              Load More Events
-            </Button>
-          </motion.div>
-        )}
-
-        {/* Newsletter CTA */}
-        <motion.div
-          className="mt-20 drip-glass rounded-2xl p-8 border border-drip-glass-border text-center"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.8 }}
-        >
-          <h3 className="text-2xl font-semibold text-white mb-4">Stay in the Loop</h3>
-          <p className="text-white/70 mb-6 max-w-lg mx-auto">
-            Get notified about new events, early bird tickets, and exclusive access to VIP experiences.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-            <Input
-              placeholder="Enter your email"
-              className="bg-drip-glass border-drip-glass-border text-white placeholder:text-white/50"
-            />
-            <Button className="bg-drip-neon-teal hover:bg-drip-neon-teal/90 text-drip-dark-start drip-glow">
-              Subscribe
-            </Button>
-          </div>
-        </motion.div>
       </div>
     </div>
   );
