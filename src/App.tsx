@@ -2,9 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { supabase } from './lib/supabaseClient';
-import { Auth } from '@supabase/auth-ui-react';
-import { ThemeSupa } from '@supabase/auth-ui-shared';
+import { useAuth } from './context/AuthContext';
+import { AuthModal } from './components/AuthModal';
 
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
@@ -15,44 +14,19 @@ import { ServicesPage } from './components/pages/ServicesPage';
 import { ContactPage } from './components/pages/ContactPage';
 import { MyBookings } from './components/MyBookings';
 
-const AdminDashboard = ({ user }: { user: any }) => {
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white p-6">
-      <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
-      <p className="mb-6">Signed in as: {user?.email ?? 'Unknown'}</p>
-      <div className="space-x-2">
-        <button
-          className="bg-red-500 text-white px-4 py-2 rounded"
-          onClick={() => supabase.auth.signOut()}
-        >
-          Sign out
-        </button>
-      </div>
-    </div>
-  );
-};
-
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [isLoading, setIsLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const { user, loading: authLoading, signOut } = useAuth();
 
   const loaderTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     loaderTimeoutRef.current = window.setTimeout(() => setIsLoading(false), 8000);
 
-    // Get current Supabase session
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-
-    // Listen for login/logout
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
     return () => {
       if (loaderTimeoutRef.current) clearTimeout(loaderTimeoutRef.current);
-      listener.subscription.unsubscribe();
     };
   }, []);
 
@@ -61,7 +35,6 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Loading screen
   if (isLoading) {
     return (
       <div className="fixed inset-0 drip-gradient-bg flex items-center justify-center z-50">
@@ -90,21 +63,6 @@ export default function App() {
     );
   }
 
-  // Supabase Auth: show login if not logged in
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
-        <Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa }} />
-      </div>
-    );
-  }
-
-  // Admin dashboard
-  if (user.email === 'chiragshukla236@gmail.com') {
-    return <AdminDashboard user={user} />;
-  }
-
-  // Render normal pages
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
@@ -124,15 +82,16 @@ export default function App() {
 
   return (
     <div className="min-h-screen drip-gradient-bg relative">
-      {/* Background & floating elements */}
       <div className="fixed inset-0 drip-noise opacity-20 pointer-events-none" />
       <div className="fixed inset-0 pointer-events-none overflow-hidden" />
 
-      {/* Header + My Bookings */}
       <Header currentPage={currentPage} onNavigate={handleNavigation} />
-      <div className="fixed top-20 right-4 z-50">
-        <MyBookings userId={user.id} />
-      </div>
+
+      {user && (
+        <div className="fixed top-20 right-4 z-50">
+          <MyBookings userId={user.id} />
+        </div>
+      )}
 
       <main className="relative z-10">
         <AnimatePresence mode="wait">
@@ -150,15 +109,24 @@ export default function App() {
 
       <Footer onNavigate={handleNavigation} />
 
-      {/* Logout button */}
-      <button
-        className="fixed top-4 right-4 bg-red-500 text-white px-3 py-1 rounded z-50"
-        onClick={() => supabase.auth.signOut()}
-      >
-        Logout
-      </button>
+      {user && (
+        <button
+          className="fixed top-4 right-4 drip-glass px-4 py-2 rounded-lg border border-drip-glass-border text-drip-neon-teal hover:bg-white/10 transition-colors z-50"
+          onClick={signOut}
+        >
+          Logout
+        </button>
+      )}
 
-      {/* Scroll to top button */}
+      {!user && (
+        <button
+          className="fixed top-4 right-4 drip-glass px-4 py-2 rounded-lg border border-drip-glass-border text-drip-neon-teal hover:bg-white/10 transition-colors z-50"
+          onClick={() => setShowAuthModal(true)}
+        >
+          Login
+        </button>
+      )}
+
       <motion.button
         className="fixed bottom-8 right-8 p-3 drip-glass rounded-full border border-drip-glass-border text-drip-neon-teal hover:bg-drip-neon-teal hover:text-drip-dark-start transition-colors z-50 drip-glow"
         initial={{ opacity: 0, scale: 0 }}
@@ -181,6 +149,8 @@ export default function App() {
           <path d="M7 20l5-5 5 5" />
         </motion.svg>
       </motion.button>
+
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </div>
   );
 }
